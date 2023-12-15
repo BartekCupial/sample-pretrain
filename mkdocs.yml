@@ -1,0 +1,116 @@
+site_name: Nethack Pretraining Documentation
+
+# Repository
+repo_name: BartekCupial/nethack-pretraining
+repo_url: https://github.com/BartekCupial/nethack-pretraining.git
+
+# Configuration
+theme:
+  name: material
+  nav_style: dark
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: cyan
+      accent: lime
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: amber
+      accent: blue grey
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+  # [TODO] add a favicon and icon here
+  # favicon: assets/favicon.png
+  icon:
+    # logo: logo
+    repo: fontawesome/brands/github
+  language: en
+  direction: ltr
+  features:
+    # - navigation.instant
+    - navigation.tracking
+    # - navigation.tabs
+    # - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    # - navigation.prune
+    # - navigation.indexes
+    - navigation.top
+    # - toc.follow
+    # - toc.integrate
+    - search.suggest
+    - search.highlight
+
+# Copyright
+copyright: Copyright &copy; 2023, Nethack Pretraining. All rights reserved.
+
+# Plugins
+plugins:
+  - search
+  - git-authors
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: date
+
+# Footer
+extra:
+  social:
+    - icon: fontawesome/solid/paper-plane
+      link: mailto:bartlomiej.cupial@gmail.com
+    - icon: fontawesome/brands/github
+      link: https://github.com/BartekCupial
+    - icon: fontawesome/brands/linkedin
+      link: www.linkedin.com/in/bcupial
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/CupiaBart
+
+# Extensions
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - meta
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  # - pymdownx.emoji:
+  #     emoji_generator: !!python/name:materialx.emoji.to_svg
+  #     emoji_index: !!python/name:materialx.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: squidfunk
+      repo: mkdocs-material
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          # format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
