@@ -82,7 +82,7 @@ setup(
         "mrunner": _mrunner_deps,
     },
     package_dir={"": "./"},
-    packages=setuptools.find_packages(where="./", include=["nethack_pretraining*"]),
+    packages=setuptools.find_packages(where="./", include=["pretraining*", "examples*"]),
     include_package_data=True,
     python_requires=">=3.8",
 )
