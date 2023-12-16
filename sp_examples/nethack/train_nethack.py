@@ -3,13 +3,15 @@ from os.path import join
 
 from sample_pretrain.algo.learning.learner import Learner
 from sample_pretrain.algo.utils.context import global_model_factory
+from sample_pretrain.algo.utils.env_info import EnvInfo, obtain_env_info_in_a_separate_process
 from sample_pretrain.cfg.arguments import load_from_path, parse_full_cfg, parse_sf_args
 from sample_pretrain.envs.env_utils import register_env
 from sample_pretrain.model.actor_critic import ActorCritic, default_make_actor_critic_func
 from sample_pretrain.model.encoder import Encoder
-from sample_pretrain.train import run_rl
+from sample_pretrain.train import run
 from sample_pretrain.utils.typing import ActionSpace, Config, ObsSpace
 from sample_pretrain.utils.utils import log
+from sp_examples.nethack.algo.learning.learner import BCLearner
 from sp_examples.nethack.models import MODELS_LOOKUP
 from sp_examples.nethack.models.kickstarter import KickStarter
 from sp_examples.nethack.nethack_env import NETHACK_ENVS, make_nethack_env
@@ -99,7 +101,12 @@ def main():  # pragma: no cover
     register_nethack_components()
 
     cfg = parse_nethack_args()
-    status = run_rl(cfg)
+
+    env_info: EnvInfo = obtain_env_info_in_a_separate_process(cfg)
+    learner = BCLearner(cfg, env_info)
+    learner.init()
+
+    status = run(cfg, learner)
     return status
 
 

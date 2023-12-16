@@ -36,8 +36,8 @@ class TestModel:
                 dataset = load_nld_aa_large_dataset(
                     data_path="/home/bartek/Workspace/data/nle/nld-aa-taster/nle_data",
                     db_path="/home/bartek/Workspace/data/nethack/AA-taster/ttyrecs.db",
-                    seq_len=batch_size,
-                    batch_size=seq_len,
+                    seq_len=seq_len,
+                    batch_size=batch_size,
                     num_workers=8,
                     role=role,
                     race=race,
@@ -50,7 +50,7 @@ class TestModel:
             with timing.timeit("sample_batch"):
                 batch = next(ds)
                 key = list(batch.keys())[0]
-                assert batch[key].shape[0] == seq_len
-                assert batch[key].shape[1] == batch_size
+                assert batch[key].shape[0] == batch_size
+                assert batch[key].shape[1] == seq_len
 
         log.debug("Timing: %s", timing)
