@@ -3,11 +3,12 @@ from concurrent.futures import ThreadPoolExecutor
 import nle.dataset as nld
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 from sample_pretrain.algo.learning.learner import Learner
 from sample_pretrain.algo.utils.env_info import EnvInfo
 from sample_pretrain.algo.utils.rl_utils import gae_advantages, prepare_and_normalize_obs
-from sample_pretrain.algo.utils.tensor_dict import TensorDict, cat_tensordicts, shallow_recursive_copy
+from sample_pretrain.algo.utils.tensor_dict import TensorDict, shallow_recursive_copy, stack_tensordicts
 from sample_pretrain.model.model_utils import get_rnn_size
 from sample_pretrain.utils.attr_dict import AttrDict
 from sample_pretrain.utils.typing import ActionDistribution, Config, InitModelData, PolicyID
@@ -82,24 +83,33 @@ class BCLearner(Learner):
     def _calculate_loss(self, mb: TensorDict):
         rnn_state = self.rnn_state
 
-        results = []
+        model_outputs = []
         seq_len = mb["actions"].shape[1]
         for i in range(seq_len):
-            policy_outputs = self.actor_critic(mb[:, i], rnn_state)
+            outputs = self.actor_critic(mb[:, i], rnn_state)
             not_done = (1.0 - mb["done"][:, i].float()).unsqueeze(-1)
 
             targets = mb[:, i]["actions"].unsqueeze(-1)
             observed_log_probs = self.actor_critic.last_action_distribution.log_prob(targets)
-            policy_outputs["observed_log_probs"] = observed_log_probs
+            outputs["observed_log_probs"] = observed_log_probs
 
-            rnn_state = policy_outputs["new_rnn_states"] * not_done
-            results.append(policy_outputs)
+            rnn_state = outputs["new_rnn_states"] * not_done
+            model_outputs.append(outputs)
 
         # update prev_actions and rnn_states for next iteration
         self.rnn_state = rnn_state.detach()
         self.prev_actions = mb["actions"][:, -1].unsqueeze(-1)
 
-        results = AttrDict(cat_tensordicts(results))
-        loss = -results["observed_log_probs"].mean()
+        model_outputs = stack_tensordicts(model_outputs, dim=1)
+        loss = -model_outputs["observed_log_probs"].mean()
 
-        return loss, results, {}
+        return loss, model_outputs, {}
+
+    def _calculate_metrics(self, mb: TensorDict, model_outputs: TensorDict):
+        targets = mb["actions"].flatten(0, 1).long()
+        outputs = model_outputs["action_logits"].flatten(0, 1)
+
+        cross_entropy = F.cross_entropy(outputs, targets)
+        metric_summaries = {"cross_entropy": cross_entropy}
+
+        return metric_summaries

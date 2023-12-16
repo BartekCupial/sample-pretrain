@@ -303,6 +303,9 @@ class Learner(Configurable):
     def _calculate_loss(self, mb: TensorDict):
         raise NotImplementedError
 
+    def _calculate_metrics(self, mb: TensorDict, model_outputs: TensorDict):
+        raise NotImplementedError
+
     def _train(self) -> Optional[AttrDict]:
         timing = self.timing
         with torch.no_grad():
@@ -318,6 +321,9 @@ class Learner(Configurable):
 
         with timing.add_time("calculate_loss"):
             loss, model_outputs, loss_summaries = self._calculate_loss(mb)
+
+        with torch.no_grad(), timing.add_time("calculate_metrics"):
+            metric_summaries = self._calculate_metrics(mb, model_outputs)
 
         # update the weights
         with timing.add_time("update"):
@@ -344,6 +350,7 @@ class Learner(Configurable):
             # collect and report summaries
             if with_summaries:
                 # hacky way to collect all of the intermediate variables for summaries
+                model_outputs = AttrDict(model_outputs)
                 summary_vars = {**locals(), **loss_summaries}
                 stats_and_summaries = self._record_summaries(AttrDict(summary_vars))
                 del summary_vars
@@ -378,6 +385,9 @@ class Learner(Configurable):
             if "exp_avg_sq" in tensor_state:
                 adam_max_second_moment = max(tensor_state["exp_avg_sq"].max().item(), adam_max_second_moment)
         stats.adam_max_second_moment = adam_max_second_moment
+
+        for key, value in var.metric_summaries.items():
+            stats[key] = value
 
         for key, value in stats.items():
             stats[key] = to_scalar(value)
