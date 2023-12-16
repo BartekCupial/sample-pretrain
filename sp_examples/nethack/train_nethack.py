@@ -2,8 +2,7 @@ import sys
 from os.path import join
 
 from sample_pretrain.algo.learning.learner import Learner
-from sample_pretrain.algo.utils.context import global_model_factory
-from sample_pretrain.algo.utils.env_info import EnvInfo, obtain_env_info_in_a_separate_process
+from sample_pretrain.algo.utils.context import global_model_factory, sf_global_context
 from sample_pretrain.cfg.arguments import load_from_path, parse_full_cfg, parse_sf_args
 from sample_pretrain.envs.env_utils import register_env
 from sample_pretrain.model.actor_critic import ActorCritic, default_make_actor_critic_func
@@ -78,8 +77,14 @@ def make_nethack_actor_critic(cfg: Config, obs_space: ObsSpace, action_space: Ac
     return model
 
 
+def register_nethack_learner():
+    sf_global_context().learner_cls = BCLearner
+    # TODO: potentially other learners like CQL, IQL etc.
+
+
 def register_nethack_components():
     register_nethack_envs()
+    register_nethack_learner()
     global_model_factory().register_encoder_factory(make_nethack_encoder)
     global_model_factory().register_actor_critic_factory(make_nethack_actor_critic)
 
@@ -102,11 +107,7 @@ def main():  # pragma: no cover
 
     cfg = parse_nethack_args()
 
-    env_info: EnvInfo = obtain_env_info_in_a_separate_process(cfg)
-    learner = BCLearner(cfg, env_info)
-    learner.init()
-
-    status = run(cfg, learner)
+    status = run(cfg)
     return status
 
 
