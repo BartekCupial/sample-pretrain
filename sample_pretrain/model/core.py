@@ -3,8 +3,8 @@ from abc import ABC
 import torch
 from torch import nn
 
-from nethack_pretraining.model.model_utils import ModelModule
-from nethack_pretraining.utils.typing import Config
+from sample_pretrain.model.model_utils import ModelModule
+from sample_pretrain.utils.typing import Config
 
 
 class ModelCore(ModelModule, ABC):

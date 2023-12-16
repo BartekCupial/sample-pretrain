@@ -12,14 +12,9 @@ with open("README.md", "r") as f:
     long_description = "\n".join(descr_no_gifs)
 
 _nethack_deps = [
-    "numba ~= 0.58",
     "pandas ~= 2.1",
     "matplotlib ~= 3.8",
     "seaborn ~= 0.12",
-    "scipy ~= 1.11",
-    "shimmy",
-    "tqdm ~= 4.66",
-    "debugpy ~= 1.6",
     "nle @ git+https://github.com/BartekCupial/nle.git",
 ]
 
@@ -36,19 +31,19 @@ _docs_deps = [
 
 setup(
     # Information
-    name="nethack-pretraining",
-    description="Pretrain policies on NetHack data",
+    name="sample-pretrain",
+    description="Pretrain policies on offline data",
     long_description=long_description,
     long_description_content_type="text/markdown",
     version="0.0.1",
-    url="https://github.com/BartekCupial/nethack-pretraining.git",
+    url="https://github.com/BartekCupial/sample-pretrain.git",
     author="Bartek Cupiał",
     license="MIT",
     keywords="pretrain reinforcement learning",
     project_urls={},
     install_requires=[
         "numpy>=1.18.1,<2.0",
-        # "torch>=1.9,<3.0,!=1.13.0", # install with conda install -yq pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+        "torch>=1.9,<3.0,!=1.13.0",  # install with conda install -yq pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
         "gymnasium>=0.27,<1.0",
         "pyglet",  # gym dependency
         "tensorboard>=1.15.0",
@@ -63,9 +58,6 @@ setup(
         "wandb>=0.12.9",
         "huggingface-hub>=0.10.0,<1.0",
         "numba ~= 0.58",
-        "pandas ~= 2.1",
-        "matplotlib ~= 3.8",
-        "seaborn ~= 0.12",
         "scipy ~= 1.11",
         "shimmy",
         "tqdm ~= 4.66",
@@ -82,7 +74,7 @@ setup(
         "mrunner": _mrunner_deps,
     },
     package_dir={"": "./"},
-    packages=setuptools.find_packages(where="./", include=["pretraining*", "examples*"]),
+    packages=setuptools.find_packages(where="./", include=["sample_pretrain*", "sp_examples*"]),
     include_package_data=True,
     python_requires=">=3.8",
 )

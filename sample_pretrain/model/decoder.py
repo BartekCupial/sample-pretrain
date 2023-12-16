@@ -3,9 +3,9 @@ from typing import List
 
 import torch
 
-from nethack_pretraining.algo.utils.torch_utils import calc_num_elements
-from nethack_pretraining.model.model_utils import ModelModule, create_mlp, nonlinearity
-from nethack_pretraining.utils.typing import Config
+from sample_pretrain.algo.utils.torch_utils import calc_num_elements
+from sample_pretrain.model.model_utils import ModelModule, create_mlp, nonlinearity
+from sample_pretrain.utils.typing import Config
 
 
 class Decoder(ModelModule, ABC):

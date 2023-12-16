@@ -4,11 +4,11 @@ import torch
 from gymnasium import spaces
 from torch import Tensor, nn
 
-from nethack_pretraining.algo.utils.torch_utils import calc_num_elements
-from nethack_pretraining.model.model_utils import ModelModule, create_mlp, model_device, nonlinearity
-from nethack_pretraining.utils.attr_dict import AttrDict
-from nethack_pretraining.utils.typing import Config, ObsSpace
-from nethack_pretraining.utils.utils import log
+from sample_pretrain.algo.utils.torch_utils import calc_num_elements
+from sample_pretrain.model.model_utils import ModelModule, create_mlp, model_device, nonlinearity
+from sample_pretrain.utils.attr_dict import AttrDict
+from sample_pretrain.utils.typing import Config, ObsSpace
+from sample_pretrain.utils.utils import log
 
 
 # noinspection PyMethodMayBeStatic,PyUnusedLocal

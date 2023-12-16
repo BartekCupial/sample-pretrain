@@ -4,8 +4,8 @@ import torch
 from torch import nn
 from torch.nn.utils import spectral_norm
 
-from nethack_pretraining.cfg.configurable import Configurable
-from nethack_pretraining.utils.typing import Config
+from sample_pretrain.cfg.configurable import Configurable
+from sample_pretrain.utils.typing import Config
 
 
 def get_rnn_size(cfg):

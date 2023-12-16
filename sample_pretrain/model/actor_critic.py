@@ -5,17 +5,17 @@ from typing import Dict, Optional
 import torch
 from torch import Tensor, nn
 
-from nethack_pretraining.algo.utils.action_distributions import is_continuous_action_space, sample_actions_log_probs
-from nethack_pretraining.algo.utils.running_mean_std import RunningMeanStdInPlace, running_mean_std_summaries
-from nethack_pretraining.algo.utils.tensor_dict import TensorDict
-from nethack_pretraining.cfg.configurable import Configurable
-from nethack_pretraining.model.action_parameterization import (
+from sample_pretrain.algo.utils.action_distributions import is_continuous_action_space, sample_actions_log_probs
+from sample_pretrain.algo.utils.running_mean_std import RunningMeanStdInPlace, running_mean_std_summaries
+from sample_pretrain.algo.utils.tensor_dict import TensorDict
+from sample_pretrain.cfg.configurable import Configurable
+from sample_pretrain.model.action_parameterization import (
     ActionParameterizationContinuousNonAdaptiveStddev,
     ActionParameterizationDefault,
 )
-from nethack_pretraining.model.model_utils import model_device
-from nethack_pretraining.utils.normalize import ObservationNormalizer
-from nethack_pretraining.utils.typing import ActionSpace, Config, ObsSpace
+from sample_pretrain.model.model_utils import model_device
+from sample_pretrain.utils.normalize import ObservationNormalizer
+from sample_pretrain.utils.typing import ActionSpace, Config, ObsSpace
 
 
 class ActorCritic(nn.Module, Configurable):
@@ -278,7 +278,7 @@ class ActorCriticSeparateWeights(ActorCritic):
 
 
 def default_make_actor_critic_func(cfg: Config, obs_space: ObsSpace, action_space: ActionSpace) -> ActorCritic:
-    from nethack_pretraining.algo.utils.context import global_model_factory
+    from sample_pretrain.algo.utils.context import global_model_factory
 
     model_factory = global_model_factory()
 
@@ -290,7 +290,7 @@ def default_make_actor_critic_func(cfg: Config, obs_space: ObsSpace, action_spac
 
 def create_actor_critic(cfg: Config, obs_space: ObsSpace, action_space: ActionSpace) -> ActorCritic:
     # check if user specified custom actor/critic creation function
-    from nethack_pretraining.algo.utils.context import global_model_factory
+    from sample_pretrain.algo.utils.context import global_model_factory
 
     make_actor_critic_func = global_model_factory().make_actor_critic_func
     return make_actor_critic_func(cfg, obs_space, action_space)

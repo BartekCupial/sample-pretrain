@@ -1,8 +1,8 @@
-site_name: Nethack Pretraining Documentation
+site_name: Sample Pretrain Documentation
 
 # Repository
-repo_name: BartekCupial/nethack-pretraining
-repo_url: https://github.com/BartekCupial/nethack-pretraining.git
+repo_name: BartekCupial/sample-pretrain
+repo_url: https://github.com/BartekCupial/sample-pretrain.git
 
 # Configuration
 theme:
@@ -51,7 +51,7 @@ theme:
     - search.highlight
 
 # Copyright
-copyright: Copyright &copy; 2023, Nethack Pretraining. All rights reserved.
+copyright: Copyright &copy; 2023, Sample Pretrain. All rights reserved.
 
 # Plugins
 plugins:

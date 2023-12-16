@@ -3,7 +3,7 @@ import math
 import torch
 from torch import Tensor, nn
 
-from nethack_pretraining.algo.utils.action_distributions import (
+from sample_pretrain.algo.utils.action_distributions import (
     calc_num_action_parameters,
     get_action_distribution,
     is_continuous_action_space,

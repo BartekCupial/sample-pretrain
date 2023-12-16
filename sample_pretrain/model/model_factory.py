@@ -1,11 +1,11 @@
 from typing import Callable
 
-from nethack_pretraining.model.actor_critic import ActorCritic, default_make_actor_critic_func
-from nethack_pretraining.model.core import ModelCore, default_make_core_func
-from nethack_pretraining.model.decoder import Decoder, default_make_decoder_func
-from nethack_pretraining.model.encoder import Encoder, default_make_encoder_func
-from nethack_pretraining.utils.typing import ActionSpace, Config, ObsSpace
-from nethack_pretraining.utils.utils import log
+from sample_pretrain.model.actor_critic import ActorCritic, default_make_actor_critic_func
+from sample_pretrain.model.core import ModelCore, default_make_core_func
+from sample_pretrain.model.decoder import Decoder, default_make_decoder_func
+from sample_pretrain.model.encoder import Encoder, default_make_encoder_func
+from sample_pretrain.utils.typing import ActionSpace, Config, ObsSpace
+from sample_pretrain.utils.utils import log
 
 MakeActorCriticFunc = Callable[[Config, ObsSpace, ActionSpace], ActorCritic]
 MakeEncoderFunc = Callable[[Config, ObsSpace], Encoder]
