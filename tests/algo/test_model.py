@@ -11,7 +11,7 @@ from sp_examples.nethack.train_nethack import parse_nethack_args
 
 class TestModel:
     @pytest.fixture(scope="class", autouse=True)
-    def register_atari_fixture(self):
+    def register_nethack_fixture(self):
         from sp_examples.nethack.train_nethack import register_nethack_components
 
         register_nethack_components()

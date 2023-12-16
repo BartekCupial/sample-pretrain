@@ -21,13 +21,9 @@ def load_nld_aa_large_dataset(
     align: Optional[Alignment] = None,
     **kwargs,
 ) -> nld.TtyrecDataset:
-    if nld.db.exists(db_path):
-        # if the db was not properly initialized previously for some reason
-        # (i.e., a wrong path and then fixed) we need to delete it and recreate from scratch
-        shutil.rmtree(db_path)
-
-    nld.db.create(db_path)
-    nld.add_nledata_directory(data_path, "autoascend", db_path)
+    if not nld.db.exists(db_path):
+        nld.db.create(db_path)
+        nld.add_nledata_directory(data_path, "autoascend", db_path)
 
     # how to write it more clearly?
     query, query_args = build_dataset_sql_query(
