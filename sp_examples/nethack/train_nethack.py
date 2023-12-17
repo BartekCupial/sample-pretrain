@@ -10,7 +10,7 @@ from sample_pretrain.model.encoder import Encoder
 from sample_pretrain.train import run
 from sample_pretrain.utils.typing import ActionSpace, Config, ObsSpace
 from sample_pretrain.utils.utils import log
-from sp_examples.nethack.algo.learning.learner import BCLearner
+from sp_examples.nethack.algo.learning.bc_learner import BCLearner
 from sp_examples.nethack.models import MODELS_LOOKUP
 from sp_examples.nethack.models.kickstarter import KickStarter
 from sp_examples.nethack.nethack_env import NETHACK_ENVS, make_nethack_env

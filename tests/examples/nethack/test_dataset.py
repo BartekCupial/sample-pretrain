@@ -11,7 +11,7 @@ from sp_examples.nethack.datasets.roles import Alignment, Race, Role
 from sp_examples.nethack.train_nethack import parse_nethack_args
 
 
-class TestModel:
+class TestNLEDataset:
     @pytest.fixture(scope="class", autouse=True)
     def register_nethack_fixture(self):
         from sp_examples.nethack.train_nethack import register_nethack_components
