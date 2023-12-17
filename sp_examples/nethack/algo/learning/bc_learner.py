@@ -30,8 +30,9 @@ class BCLearner(Learner):
         self.dataset: nld.TtyrecDataset = None
         self.tp = None
 
-        self.rnn_state = None
-        self.prev_actions = None
+        self.rnn_states = None
+        self._iterators = None
+        self._results = None
 
     def init(self):
         super().init()
@@ -39,10 +40,46 @@ class BCLearner(Learner):
         self.dataset = self._get_dataset()
         self.tp = ThreadPoolExecutor(max_workers=self.cfg.num_workers)
 
-        self.rnn_state = torch.zeros(
-            (self.cfg.batch_size, get_rnn_size(self.cfg)), dtype=torch.float32, device=self.device
-        )
-        self.prev_actions = np.zeros((self.cfg.batch_size, 1))
+        def _make_sing_iter(dataset):
+            dataset = iter(dataset)
+
+            def _iter():
+                prev_actions = np.zeros((self.cfg.batch_size, 1))
+
+                while True:
+                    batch = next(dataset)
+
+                    screen_image = render_screen_image(
+                        tty_chars=batch["tty_chars"],
+                        tty_colors=batch["tty_colors"],
+                        tty_cursor=batch["tty_cursor"],
+                        threadpool=self.tp,
+                    )
+                    batch["screen_image"] = screen_image
+                    batch["actions"] = ACTION_MAPPING[batch["keypresses"]]
+                    batch["prev_actions"] = np.concatenate([prev_actions, batch["actions"][:, :-1]], axis=1)
+                    prev_actions = np.expand_dims(batch["actions"][:, -1], -1)
+
+                    normalized_batch = prepare_and_normalize_obs(self.actor_critic, batch)
+                    normalized_batch = TensorDict(normalized_batch)
+
+                    yield normalized_batch
+
+            return iter(_iter())
+
+        self.rnn_states = [
+            torch.zeros((self.cfg.batch_size, get_rnn_size(self.cfg)), dtype=torch.float32, device=self.device)
+            for _ in range(self.cfg.worker_num_splits)
+        ]
+        self.idx = 0
+        self.prev_idx = 0
+
+        self._iterators = []
+        self._results = []
+        for _ in range(self.cfg.worker_num_splits):
+            it = _make_sing_iter(self.dataset)
+            self._iterators.append(it)
+            self._results.append(self.tp.submit(next, it))
 
     def _get_dataset(self):
         if self.cfg.character == "@":
@@ -61,27 +98,24 @@ class BCLearner(Learner):
             align=align,
         )
 
-        return iter(dataset)
+        return dataset
+
+    def result(self):
+        return self._results[self.idx].result()
+
+    def step(self):
+        fut = self.tp.submit(next, self._iterators[self.idx])
+        self._results[self.idx] = fut
+        self.prev_idx = self.idx
+        self.idx = (self.idx + 1) % self.cfg.worker_num_splits
 
     def _get_minibatch(self) -> TensorDict:
-        batch = next(self.dataset)
-        screen_image = render_screen_image(
-            tty_chars=batch["tty_chars"],
-            tty_colors=batch["tty_colors"],
-            tty_cursor=batch["tty_cursor"],
-            threadpool=self.tp,
-        )
-        batch["screen_image"] = screen_image
-        batch["actions"] = ACTION_MAPPING[batch["keypresses"]]
-        batch["prev_actions"] = np.concatenate([self.prev_actions, batch["actions"][:, :-1]], axis=1)
-
-        normalized_batch = prepare_and_normalize_obs(self.actor_critic, batch)
-        normalized_batch = TensorDict(normalized_batch)
-
+        normalized_batch = self.result()
+        self.step()
         return normalized_batch
 
     def _calculate_loss(self, mb: TensorDict):
-        rnn_state = self.rnn_state
+        rnn_state = self.rnn_states[self.prev_idx]
 
         model_outputs = []
         seq_len = mb["actions"].shape[1]
@@ -97,8 +131,7 @@ class BCLearner(Learner):
             model_outputs.append(outputs)
 
         # update prev_actions and rnn_states for next iteration
-        self.rnn_state = rnn_state.detach()
-        self.prev_actions = mb["actions"][:, -1].unsqueeze(-1)
+        self.rnn_states[self.prev_idx] = rnn_state.detach()
 
         model_outputs = stack_tensordicts(model_outputs, dim=1)
         loss = -model_outputs["observed_log_probs"].mean()
