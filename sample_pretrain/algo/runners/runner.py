@@ -319,6 +319,8 @@ class Runner(Configurable):
         self.learner = self._make_learner()
         self.learner.init()
 
+        self.component_profiles["Learner"] = self.learner.timing
+
         return ExperimentStatus.SUCCESS
 
     def _should_end_training(self):
@@ -333,6 +335,13 @@ class Runner(Configurable):
     def _stop_training(self, failed: bool = False) -> None:
         if not self.stopped:
             self._save_policy()
+
+            self.component_profiles = sorted(list(self.component_profiles.items()), key=lambda x: x[0])
+            for component, profile in self.component_profiles:
+                log.info(profile)
+
+            for w in self.writers.values():
+                w.flush()
 
             if failed:
                 self.status = ExperimentStatus.FAILURE
@@ -350,12 +359,15 @@ class Runner(Configurable):
 
     # noinspection PyBroadException
     def run(self) -> StatusCode:
-        while not self.stopped:
-            self._new_training_batch()
-            self._after_training_iteration()
-            self._check_periodics()
+        with self.timing.timeit("main_loop"):
+            while not self.stopped:
+                self._new_training_batch()
+                self._after_training_iteration()
+                self._check_periodics()
 
+        log.info(self.timing)
         if self.total_env_steps_since_resume is None:
             self.total_env_steps_since_resume = 0
-        log.info("Collected %r", self.env_steps)
+        fps = self.total_env_steps_since_resume / self.timing.main_loop
+        log.info("Collected %r, FPS: %.1f", self.env_steps, fps)
         return self.status
