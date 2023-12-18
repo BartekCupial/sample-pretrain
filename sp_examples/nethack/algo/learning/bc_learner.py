@@ -45,6 +45,7 @@ class BCLearner(Learner):
 
             def _iter():
                 prev_actions = np.zeros((self.cfg.batch_size, 1))
+                prev_timestamps = np.ones((self.cfg.batch_size, 1)) * -1
 
                 while True:
                     batch = next(dataset)
@@ -57,8 +58,16 @@ class BCLearner(Learner):
                     )
                     batch["screen_image"] = screen_image
                     batch["actions"] = ACTION_MAPPING[batch["keypresses"]]
-                    batch["prev_actions"] = np.concatenate([prev_actions, batch["actions"][:, :-1]], axis=1)
-                    prev_actions = np.expand_dims(batch["actions"][:, -1], -1)
+                    batch["prev_actions"] = np.concatenate([prev_actions, batch["actions"][:, :-1].copy()], axis=1)
+                    prev_actions = np.expand_dims(batch["actions"][:, -1].copy(), -1)
+
+                    # dones are broken in NLD-AA, so we just rewrite them with always done at last step
+                    # see: https://github.com/facebookresearch/nle/issues/355
+                    timestamp_diff = batch["timestamps"] - np.concatenate(
+                        [prev_timestamps, batch["timestamps"][:, :-1].copy()], axis=1
+                    )
+                    batch["done"][np.where(timestamp_diff != 1)] = 1
+                    prev_timestamps = np.expand_dims(batch["timestamps"][:, -1].copy(), -1)
 
                     normalized_batch = prepare_and_normalize_obs(self.actor_critic, batch)
                     normalized_batch = TensorDict(normalized_batch)
