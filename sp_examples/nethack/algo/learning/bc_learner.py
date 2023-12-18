@@ -7,11 +7,10 @@ import torch.nn.functional as F
 
 from sample_pretrain.algo.learning.learner import Learner
 from sample_pretrain.algo.utils.env_info import EnvInfo
-from sample_pretrain.algo.utils.rl_utils import gae_advantages, prepare_and_normalize_obs
-from sample_pretrain.algo.utils.tensor_dict import TensorDict, shallow_recursive_copy, stack_tensordicts
+from sample_pretrain.algo.utils.rl_utils import prepare_and_normalize_obs
+from sample_pretrain.algo.utils.tensor_dict import TensorDict, clone_tensordict, stack_tensordicts
 from sample_pretrain.model.model_utils import get_rnn_size
-from sample_pretrain.utils.attr_dict import AttrDict
-from sample_pretrain.utils.typing import ActionDistribution, Config, InitModelData, PolicyID
+from sample_pretrain.utils.typing import Config, PolicyID
 from sp_examples.nethack.datasets.actions import ACTION_MAPPING
 from sp_examples.nethack.datasets.dataset import load_nld_aa_large_dataset
 from sp_examples.nethack.datasets.render import render_screen_image
@@ -69,8 +68,9 @@ class BCLearner(Learner):
                     batch["done"][np.where(timestamp_diff != 1)] = 1
                     prev_timestamps = np.expand_dims(batch["timestamps"][:, -1].copy(), -1)
 
+                    # ensure that we don't overrite data
                     normalized_batch = prepare_and_normalize_obs(self.actor_critic, batch)
-                    normalized_batch = TensorDict(normalized_batch)
+                    normalized_batch = clone_tensordict(TensorDict(normalized_batch))
 
                     yield normalized_batch
 
