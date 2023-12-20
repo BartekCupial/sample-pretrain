@@ -115,7 +115,7 @@ class Learner(Configurable):
             np.random.seed(self.cfg.seed)
 
         # initialize device
-        self.device = torch.device("cpu") if self.cfg.device else torch.device("cuda")
+        self.device = torch.device("cpu") if self.cfg.device == "cpu" else torch.device("cuda")
 
         log.debug("Initializing actor-critic model on device %s", self.device)
 
