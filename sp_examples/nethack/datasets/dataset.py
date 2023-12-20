@@ -11,6 +11,7 @@ from .roles import Alignment, Race, Role, Sex
 
 
 def load_nld_aa_large_dataset(
+    dataset_name: str,
     data_path: str,
     db_path: str,
     seq_len: int,
@@ -23,7 +24,7 @@ def load_nld_aa_large_dataset(
 ) -> nld.TtyrecDataset:
     if not nld.db.exists(db_path):
         nld.db.create(db_path)
-        nld.add_nledata_directory(data_path, "autoascend", db_path)
+        nld.add_nledata_directory(data_path, dataset_name, db_path)
 
     # how to write it more clearly?
     query, query_args = build_dataset_sql_query(
@@ -35,7 +36,7 @@ def load_nld_aa_large_dataset(
     tp = ThreadPoolExecutor(max_workers=num_workers)
 
     dataset = nld.TtyrecDataset(
-        dataset_name="autoascend",
+        dataset_name=dataset_name,
         dbfilename=db_path,
         batch_size=batch_size,
         seq_length=seq_len,

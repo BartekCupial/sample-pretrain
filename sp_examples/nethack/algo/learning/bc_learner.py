@@ -98,6 +98,7 @@ class BCLearner(Learner):
             role, race, align = Role(role), Race(race), Alignment(align)
 
         dataset = load_nld_aa_large_dataset(
+            dataset_name=self.cfg.dataset_name,
             data_path=self.cfg.data_path,
             db_path=self.cfg.db_path,
             seq_len=self.cfg.rollout,
