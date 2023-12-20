@@ -51,7 +51,7 @@ from sp_examples.nethack.utils.task_rewards import (
     StaircaseScore,
 )
 
-SMALL_FONT_PATH = os.path.abspath("examples/nethack/render_utils/Hack-Regular.ttf")
+SMALL_FONT_PATH = os.path.abspath("sp_examples/nethack/render_utils/Hack-Regular.ttf")
 
 # Mapping of 0-15 colors used.
 # Taken from bottom image here. It seems about right

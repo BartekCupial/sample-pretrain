@@ -20,7 +20,7 @@ config = {
     "wandb_group": "gmum",
     "with_wandb": True,
     "db_path": "/ttyrecs/ttyrecs.db",
-    "data_path": "/nle/nld-aa/nle_data",
+    "data_path": "/nle/nld-aa-l/nle_data",
     "dataset_name": "autoascend",
     "use_prev_action": True,
     "model": "ScaledNet",
