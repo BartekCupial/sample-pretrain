@@ -6,6 +6,7 @@ import torch
 import torch.nn.functional as F
 
 from sample_pretrain.algo.learning.learner import Learner
+from sample_pretrain.algo.utils.context import global_ddp_mode
 from sample_pretrain.algo.utils.env_info import EnvInfo
 from sample_pretrain.algo.utils.rl_utils import prepare_and_normalize_obs
 from sample_pretrain.algo.utils.tensor_dict import TensorDict, clone_tensordict, stack_tensordicts
@@ -69,7 +70,8 @@ class BCLearner(Learner):
                     prev_timestamps = np.expand_dims(batch["timestamps"][:, -1].copy(), -1)
 
                     # ensure that we don't overrite data
-                    normalized_batch = prepare_and_normalize_obs(self.actor_critic, batch)
+                    model = self.actor_critic.module if global_ddp_mode() else self.actor_critic
+                    normalized_batch = prepare_and_normalize_obs(model, batch)
                     normalized_batch = clone_tensordict(TensorDict(normalized_batch))
 
                     yield normalized_batch
@@ -134,7 +136,8 @@ class BCLearner(Learner):
             not_done = (1.0 - mb["done"][:, i].float()).unsqueeze(-1)
 
             targets = mb[:, i]["actions"].unsqueeze(-1)
-            observed_log_probs = self.actor_critic.last_action_distribution.log_prob(targets)
+            model = self.actor_critic.module if global_ddp_mode() else self.actor_critic
+            observed_log_probs = model.last_action_distribution.log_prob(targets)
             outputs["observed_log_probs"] = observed_log_probs
 
             rnn_state = outputs["new_rnn_states"] * not_done
@@ -144,7 +147,9 @@ class BCLearner(Learner):
         self.rnn_states[self.prev_idx] = rnn_state.detach()
 
         model_outputs = stack_tensordicts(model_outputs, dim=1)
-        loss = -model_outputs["observed_log_probs"].mean()
+
+        # DDP will complain if we don't use the baseline head nowhere in the code
+        loss = -model_outputs["observed_log_probs"].mean() + outputs["values"].mean() * 0
 
         return loss, model_outputs, {}
 

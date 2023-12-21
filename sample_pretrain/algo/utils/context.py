@@ -6,6 +6,7 @@ from sample_pretrain.utils.typing import CreateEnvFunc
 
 class SampleFactoryContext:
     def __init__(self):
+        self.ddp_mode = False
         self.env_registry = dict()
         self.model_factory = ModelFactory()
         from sample_pretrain.algo.learning.learner import Learner
@@ -31,6 +32,14 @@ def set_global_context(ctx: SampleFactoryContext):
 def reset_global_context():
     global GLOBAL_CONTEXT
     GLOBAL_CONTEXT = SampleFactoryContext()
+
+
+def global_ddp_mode() -> bool:
+    """
+    :return: global ddp mode
+    :rtype: bool
+    """
+    return sf_global_context().ddp_mode
 
 
 def global_env_registry() -> Dict[str, CreateEnvFunc]:

@@ -9,10 +9,13 @@ from typing import Callable, Dict, Optional, Tuple
 
 import numpy as np
 import torch
+import torch.distributed as dist
 from torch import Tensor
 from torch.nn import Module
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 from sample_pretrain.algo.utils.action_distributions import get_action_distribution, is_continuous_action_space
+from sample_pretrain.algo.utils.context import global_ddp_mode
 from sample_pretrain.algo.utils.env_info import EnvInfo
 from sample_pretrain.algo.utils.misc import LEARNER_ENV_STEPS, POLICY_ID_KEY, STATS_KEY, TRAIN_STATS, memory_stats
 from sample_pretrain.algo.utils.optimizers import Lamb
@@ -27,6 +30,21 @@ from sample_pretrain.utils.dicts import iterate_recursively
 from sample_pretrain.utils.timing import Timing
 from sample_pretrain.utils.typing import ActionDistribution, Config, InitModelData, PolicyID
 from sample_pretrain.utils.utils import ensure_dir_exists, experiment_dir, log
+
+
+def policy_device(cfg: AttrDict) -> torch.device:
+    """Inference/Learning device for the given policy."""
+
+    if cfg.device == "cpu":
+        return torch.device("cpu")
+    else:
+        if global_ddp_mode():
+            rank = dist.get_rank()
+            log.info(f"Start running on rank {rank}.")
+            device_id = rank % torch.cuda.device_count()
+            return torch.device("cuda", index=device_id)
+        else:
+            return torch.device("cuda", index=0)
 
 
 class LearningRateScheduler:
@@ -115,7 +133,7 @@ class Learner(Configurable):
             np.random.seed(self.cfg.seed)
 
         # initialize device
-        self.device = torch.device("cpu") if self.cfg.device == "cpu" else torch.device("cuda")
+        self.device = policy_device(self.cfg)
 
         log.debug("Initializing actor-critic model on device %s", self.device)
 
@@ -125,6 +143,10 @@ class Learner(Configurable):
         log.debug(self.actor_critic)
         self.actor_critic.model_to_device(self.device)
         self.actor_critic.train()
+        if global_ddp_mode():
+            # create with broadcast_buffers=False, batchnorm causes issues
+            # https://github.com/pytorch/pytorch/issues/73332
+            self.actor_critic = DDP(self.actor_critic, device_ids=[self.device], broadcast_buffers=False)
 
         params = list(self.actor_critic.parameters())
 
@@ -229,6 +251,10 @@ class Learner(Configurable):
 
     def _save_impl(self, name_prefix, name_suffix, keep_checkpoints, verbose=True) -> bool:
         if not self.is_initialized:
+            return False
+
+        # check if main process
+        if global_ddp_mode() and dist.get_rank() != 0:
             return False
 
         checkpoint = self._get_checkpoint_dict()
@@ -366,7 +392,8 @@ class Learner(Configurable):
         stats.env_steps = self.env_steps
         stats.lr = self.curr_lr
 
-        stats.update(self.actor_critic.summaries())
+        model = self.actor_critic.module if global_ddp_mode() else self.actor_critic
+        stats.update(model.summaries())
 
         grad_norm = (
             sum(p.grad.data.norm(2).item() ** 2 for p in self.actor_critic.parameters() if p.grad is not None) ** 0.5
