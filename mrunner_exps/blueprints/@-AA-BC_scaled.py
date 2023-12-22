@@ -18,7 +18,7 @@ config = {
     "wandb_user": "bartekcupial",
     "wandb_project": "sp_nethack",
     "wandb_group": "gmum",
-    "with_wandb": False,
+    "with_wandb": True,
     "db_path": "/ttyrecs/ttyrecs.db",
     "data_path": "/nle/nld-aa-l/nle_data",
     "dataset_name": "autoascend",
