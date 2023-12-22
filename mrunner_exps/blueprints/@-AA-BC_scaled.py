@@ -14,7 +14,6 @@ config = {
     "worker_num_splits": 2,
     "rollout": 32,
     "batch_size": 512,
-    "save_milestones_ith": 10_000_000,
     "wandb_user": "bartekcupial",
     "wandb_project": "sp_nethack",
     "wandb_group": "gmum",

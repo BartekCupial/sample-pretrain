@@ -14,7 +14,6 @@ config = {
     "worker_num_splits": 2,
     "rollout": 32,
     "batch_size": 512,
-    "save_milestones_ith": 10_000_000,
     "wandb_user": "bartekcupial",
     "wandb_project": "sp_nethack",
     "wandb_group": "gmum",
@@ -32,7 +31,8 @@ config = {
 params_grid = [
     {
         "seed": list(range(5)),
-        "batch_size": [128],
+        "batch_size": [64],
+        "restart_behavior": ["overwrite"],
         "db_path": ["/home/bartek/Workspace/data/nethack/AA-taster/ttyrecs.db"],
     },
 ]
