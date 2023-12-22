@@ -285,6 +285,10 @@ class Learner(Configurable):
         return self._save_impl("checkpoint", "", self.cfg.keep_checkpoints)
 
     def save_milestone(self):
+        # check if main process
+        if global_ddp_mode() and dist.get_rank() != 0:
+            return False
+
         checkpoint = self._get_checkpoint_dict()
         assert checkpoint is not None
         checkpoint_dir = self.checkpoint_dir(self.cfg, self.policy_id)
