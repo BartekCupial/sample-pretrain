@@ -33,7 +33,8 @@ params_grid = [
         "seed": list(range(5)),
         "batch_size": [64],
         "restart_behavior": ["overwrite"],
-        "db_path": ["/home/bartek/Workspace/data/nethack/AA-taster/ttyrecs.db"],
+        "dataset_name": ["nld-aa-xl"],
+        "db_path": ["/home/bartek/Workspace/data/nethack/AA-taster/ttyrecs2.db"],
     },
 ]
 
