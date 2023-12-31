@@ -137,13 +137,13 @@ class BCLearner(Learner):
 
             targets = mb[:, i]["actions"].unsqueeze(-1)
             model = self.actor_critic.module if global_ddp_mode() else self.actor_critic
-            observed_log_probs = model.last_action_distribution.log_prob(targets)
+            observed_log_probs = model.action_distribution().log_prob(targets)
             outputs["observed_log_probs"] = observed_log_probs
 
             rnn_state = outputs["new_rnn_states"] * not_done
             model_outputs.append(outputs)
 
-        # update prev_actions and rnn_states for next iteration
+        # update rnn_states for next iteration
         self.rnn_states[self.prev_idx] = rnn_state.detach()
 
         model_outputs = stack_tensordicts(model_outputs, dim=1)
