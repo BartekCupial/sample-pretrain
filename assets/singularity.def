@@ -50,6 +50,7 @@ From: nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
     conda install -yq pybind11 -c conda-forge
     conda install -yq pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
 
+
     # install render_utils
     cd /dungeons/
     pybind11_INCLUDE_DIR=/opt/conda/share/cmake/pybind11
@@ -59,6 +60,9 @@ From: nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
 
     # install sample factory
     pip install .[dev]
+
+    pip install causal_conv1d
+    pip install mamba-ssm
 
     # Test NLE.
     python -c 'import gym; import nle; env = gym.make("NetHackScore-v0"); env.reset()'

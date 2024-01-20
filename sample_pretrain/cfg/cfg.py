@@ -540,9 +540,21 @@ def add_model_args(p: ArgumentParser):
         help="Size of the RNN hidden state in recurrent model (e.g. GRU or LSTM)",
     )
     p.add_argument(
+        "--mamba_conv_size",
+        default=4,
+        type=int,
+        help="Size of Conv part of Mamba ssm",
+    )
+    p.add_argument(
+        "--mamba_expand",
+        default=2,
+        type=int,
+        help="Expand factor of Mamba ssm",
+    )
+    p.add_argument(
         "--rnn_type",
         default="gru",
-        choices=["gru", "lstm"],
+        choices=["gru", "lstm", "mamba"],
         type=str,
         help="Type of RNN cell to use if use_rnn is True",
     )

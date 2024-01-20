@@ -8,7 +8,7 @@ from sample_pretrain.cfg.configurable import Configurable
 from sample_pretrain.utils.typing import Config
 
 
-def get_rnn_size(cfg):
+def get_rnn_size(cfg, encoder_out_size):
     if cfg.use_rnn:
         size = cfg.rnn_size * cfg.rnn_num_layers
     else:
@@ -16,6 +16,8 @@ def get_rnn_size(cfg):
 
     if cfg.rnn_type == "lstm":
         size *= 2
+    elif cfg.rnn_type == "mamba":
+        size = (encoder_out_size * cfg.mamba_expand) * (cfg.mamba_conv_size + cfg.rnn_size)
 
     if not cfg.actor_critic_share_weights:
         # actor and critic need separate states

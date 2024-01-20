@@ -79,9 +79,10 @@ class BCLearner(Learner):
                     yield normalized_batch
 
             return iter(_iter())
-
+        
+        out_size = self.actor_critic.encoder.get_out_size()
         self.rnn_states = [
-            torch.zeros((self.cfg.batch_size, get_rnn_size(self.cfg)), dtype=torch.float32, device=self.device)
+            torch.zeros((self.cfg.batch_size, get_rnn_size(self.cfg, out_size)), dtype=torch.float32, device=self.device)
             for _ in range(self.cfg.worker_num_splits)
         ]
         self.idx = 0
