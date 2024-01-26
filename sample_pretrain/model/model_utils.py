@@ -17,7 +17,7 @@ def get_rnn_size(cfg, encoder_out_size):
     if cfg.rnn_type == "lstm":
         size *= 2
     elif cfg.rnn_type == "mamba":
-        size = (encoder_out_size * cfg.mamba_expand) * (cfg.mamba_conv_size + cfg.rnn_size)
+        size = (cfg.mamba_model_size * cfg.mamba_expand) * (cfg.mamba_conv_size + cfg.mamba_state_size)
 
     if not cfg.actor_critic_share_weights:
         # actor and critic need separate states

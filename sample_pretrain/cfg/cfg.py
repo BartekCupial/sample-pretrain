@@ -552,6 +552,18 @@ def add_model_args(p: ArgumentParser):
         help="Expand factor of Mamba ssm",
     )
     p.add_argument(
+        "--mamba_model_size",
+        default=128,
+        type=int,
+        help="Size of the Mamba d_model",
+    )
+    p.add_argument(
+        "--mamba_state_size",
+        default=4,
+        type=int,
+        help="Size of the Mamba d_state",
+    )
+    p.add_argument(
         "--rnn_type",
         default="gru",
         choices=["gru", "lstm", "mamba"],
