@@ -3,10 +3,11 @@ from abc import ABC
 import torch
 from torch import nn
 
+from sample_pretrain.model.mamba import MixerModel
 from sample_pretrain.model.model_utils import ModelModule
 from sample_pretrain.utils.typing import Config
 
-from mamba_ssm import Mamba as OrigMamba
+from mamba_ssm import Mamba as MambaLayer
 from mamba_ssm.utils.generation import InferenceParams
 
 
@@ -19,7 +20,8 @@ class ModelCore(ModelModule, ABC):
         return self.core_output_size
 
 class CustomMamba(nn.Module):
-    def __init__(self, input_size, output_size, d_model, d_state, d_conv, expand, layer_idx=0):
+    def __init__(self, input_size: int, output_size: int, d_model: int,
+                 d_state: int, d_conv: int, expand: int, num_layers: int = 1):
         super().__init__()
 
         self.input_size = input_size
@@ -28,46 +30,59 @@ class CustomMamba(nn.Module):
         self.d_state = d_state
         self.d_conv = d_conv
         self.expand = expand
+        self.num_layers = num_layers
+
+        ssm_cfg = {
+           "d_state": d_state,
+           "d_conv": d_conv,
+           "expand": expand,
+        }
 
         self.input_projection = nn.Linear(input_size, d_model)
         self.output_projection = nn.Linear(d_model, output_size)
-        
 
-
-        # TODO: if I want to have multiple layers, I would have to rewrite how it's passed
-        self.core = OrigMamba(
-            # This module uses roughly 3 * expand * d_model^2 parameters
-            d_model=self.d_model,  # Model dimension d_model
-            d_state=self.d_state,   # SSM state expansion factor
-            d_conv=self.d_conv,    # Local convolution width
-            expand=self.expand,    # Block expansion factor
-            layer_idx=0,
-        )
-        self.norm = nn.LayerNorm(d_model)
+        self.core = MixerModel(d_model, n_layer=num_layers, ssm_cfg=ssm_cfg)
 
     def forward(self, x, rnn_states):
+        # states -> [num_layers, batch_size, d_state]
 
         # Handle rnn_states
         inference_params = InferenceParams(max_seqlen=3,
                                            max_batch_size=rnn_states.shape[1],
                                            seqlen_offset=2)
-        rnn_states = rnn_states.reshape(rnn_states.shape[1], -1, self.core.d_conv + self.core.d_state)
+        rnn_states = rnn_states.reshape(self.num_layers, rnn_states.shape[1], -1, self.d_conv + self.d_state)
         rnn_states = rnn_states.contiguous().clone()
-        conv_state = rnn_states[..., :self.core.d_conv]
-        rnn_state = rnn_states[..., self.core.d_conv:]
-        inference_params.key_value_memory_dict = {0: (conv_state, rnn_state)}
+        conv_state = rnn_states[..., :self.d_conv]
+        rnn_state = rnn_states[..., self.d_conv:]
+
+        inference_params.key_value_memory_dict = {
+            layer_idx: (conv_state[layer_idx], rnn_state[layer_idx])
+            for layer_idx in range(self.num_layers)
+        }
 
         # Process input
         x = self.input_projection(x)
-        x = self.core(x.permute(1, 0, 2), inference_params)
+        x = x.permute(1, 0, 2)
+        x = self.core(x, inference_params=inference_params)
         x = x.permute(1, 0, 2)
         x = self.output_projection(x)
 
-        conv_state, rnn_state = inference_params.key_value_memory_dict[0]
-        new_rnn_states = torch.cat((conv_state, rnn_state), dim=2)
-        new_rnn_states = new_rnn_states.reshape(new_rnn_states.size(0), -1)
+        conv_state = torch.stack(
+            list(inference_params.key_value_memory_dict[layer_idx][0]
+                 for layer_idx in range(self.num_layers)),
+            dim=0
+        )
+        rnn_state = torch.stack(
+            list(inference_params.key_value_memory_dict[layer_idx][1]
+                 for layer_idx in range(self.num_layers)),
+            dim=0
+        )
+
+        new_rnn_states = torch.cat((conv_state, rnn_state), dim=-1)
+        new_rnn_states = new_rnn_states.reshape(self.num_layers, new_rnn_states.size(1), -1)
 
         return x, new_rnn_states
+
 
 class ModelCoreRNN(ModelCore):
     def __init__(self, cfg, input_size):
@@ -86,13 +101,13 @@ class ModelCoreRNN(ModelCore):
             self.core = nn.LSTM(input_size, cfg.rnn_size, cfg.rnn_num_layers)
         elif cfg.rnn_type == "mamba":
             self.is_mamba = True
-            assert cfg.rnn_num_layers == 1
             self.core = CustomMamba(input_size,
                                     output_size=cfg.rnn_size,
                                     d_model=cfg.mamba_model_size,
                                     d_state=cfg.mamba_state_size,
                                     d_conv=cfg.mamba_conv_size,
-                                    expand=cfg.mamba_expand)
+                                    expand=cfg.mamba_expand,
+                                    num_layers=cfg.rnn_num_layers)
         else:
             raise RuntimeError(f"Unknown RNN type {cfg.rnn_type}")
 

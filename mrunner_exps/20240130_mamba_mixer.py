@@ -20,14 +20,14 @@ config = {
     "data_path": "/nle/nld-aa/nle_data",
 
     # Athena
-    # "db_path": "/ttyrecs/ttyrecs.db",
-    # "dataset_name": "autoascend",
-    # "batch_size": 512,
+    "db_path": "/ttyrecs/ttyrecs.db",
+    "dataset_name": "autoascend",
+    "batch_size": 512,
 
     # Local
-    "db_path": "/home/maciejwolczyk/Repos/ttyrecs.db",
-    "dataset_name": "nld-aa-taster-v1",
-    "batch_size": 16,
+    # "db_path": "/home/maciejwolczyk/Repos/ttyrecs.db",
+    # "dataset_name": "nld-aa-taster-v1",
+    # "batch_size": 16,
 
     "use_prev_action": True,
     "model": "ScaledNet",
@@ -53,13 +53,13 @@ params_grid = [
     {
         "seed": list(range(1)),
         "rnn_type": ["mamba"],
-        "mamba_model_size": [128, 256],
+        "mamba_model_size": [128, 256, 512],
         "mamba_state_size": [32],
         "mamba_conv_size": [4],
         "mamba_expand": [2],
         "rnn_size": [512],
         "learning_rate": [1e-4, 1e-3, 1e-2],
-        "rnn_num_layers": [3, 2],
+        "rnn_num_layers": [1, 2, 3],
     },
     # {
     #     "seed": list(range(1)),
