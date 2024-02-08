@@ -169,6 +169,12 @@ def add_rl_args(p: ArgumentParser):
         type=str2bool,
         help="Whether to randomize and shuffle minibatches between iterations (this is a slow operation when batches are large, disabling this increases learner throughput when training with multiple epochs/minibatches per epoch)",
     )
+    p.add_argument(
+        "--debug_zero_history",
+        default=False,
+        type=str2bool,
+        help="Used for debugging purposes to check what happens if RNNs retain zero history",
+    )
 
     # basic RL parameters
     p.add_argument("--gamma", default=0.99, type=float, help="Discount factor")
@@ -575,9 +581,9 @@ def add_model_args(p: ArgumentParser):
     # Decoder settings. Decoder appears between policy core (RNN) and action/critic heads.
     p.add_argument(
         "--decoder_mlp_layers",
-        default=[],
+        default=[512, 512],
         type=int,
-        nargs="*",
+        nargs="+",
         help="Optional decoder MLP layers after the policy core. If empty (default) decoder is identity function.",
     )
 

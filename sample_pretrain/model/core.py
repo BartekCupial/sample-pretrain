@@ -116,6 +116,9 @@ class ModelCoreRNN(ModelCore):
 
     def forward(self, head_output, rnn_states):
         is_seq = not torch.is_tensor(head_output)
+        
+        if self.cfg.debug_zero_history:
+            rnn_states = torch.zeros_like(rnn_states)
 
         if not is_seq:
             head_output = head_output.unsqueeze(0)
