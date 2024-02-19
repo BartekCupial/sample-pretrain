@@ -7,7 +7,6 @@ from sample_pretrain.model.mamba import MixerModel
 from sample_pretrain.model.model_utils import ModelModule
 from sample_pretrain.utils.typing import Config
 
-from mamba_ssm import Mamba as MambaLayer
 from mamba_ssm.utils.generation import InferenceParams
 
 
@@ -21,7 +20,8 @@ class ModelCore(ModelModule, ABC):
 
 class CustomMamba(nn.Module):
     def __init__(self, input_size: int, output_size: int, d_model: int,
-                 d_state: int, d_conv: int, expand: int, num_layers: int = 1):
+                 d_state: int, d_conv: int, expand: int, num_layers: int = 1,
+                 use_complex: bool = False):
         super().__init__()
 
         self.input_size = input_size
@@ -31,11 +31,13 @@ class CustomMamba(nn.Module):
         self.d_conv = d_conv
         self.expand = expand
         self.num_layers = num_layers
+        self.use_complex = use_complex
 
         ssm_cfg = {
            "d_state": d_state,
            "d_conv": d_conv,
            "expand": expand,
+           "use_complex": use_complex,
         }
 
         self.input_projection = nn.Linear(input_size, d_model)
@@ -54,6 +56,9 @@ class CustomMamba(nn.Module):
         rnn_states = rnn_states.contiguous().clone()
         conv_state = rnn_states[..., :self.d_conv]
         rnn_state = rnn_states[..., self.d_conv:]
+
+        if self.use_complex:
+            conv_state = conv_state.real
 
         inference_params.key_value_memory_dict = {
             layer_idx: (conv_state[layer_idx], rnn_state[layer_idx])
@@ -77,6 +82,9 @@ class CustomMamba(nn.Module):
                  for layer_idx in range(self.num_layers)),
             dim=0
         )
+
+        if self.use_complex:
+            conv_state = torch.complex(conv_state, torch.zeros_like(conv_state))
 
         new_rnn_states = torch.cat((conv_state, rnn_state), dim=-1)
         new_rnn_states = new_rnn_states.reshape(self.num_layers, new_rnn_states.size(1), -1)
@@ -107,7 +115,8 @@ class ModelCoreRNN(ModelCore):
                                     d_state=cfg.mamba_state_size,
                                     d_conv=cfg.mamba_conv_size,
                                     expand=cfg.mamba_expand,
-                                    num_layers=cfg.rnn_num_layers)
+                                    num_layers=cfg.rnn_num_layers,
+                                    use_complex=cfg.mamba_use_complex)
         else:
             raise RuntimeError(f"Unknown RNN type {cfg.rnn_type}")
 

@@ -7,7 +7,7 @@ config = {
     "env": "nethack_challenge",
     "exp_tags": [name],
     "exp_point": "monk-AA-BC",
-    "train_for_env_steps": 4_000_000_000,
+    "train_for_env_steps": 2_000_000_000,
     "group": "monk-AA-BC",
     "character": "mon-hum-neu",
     "num_workers": 16,
@@ -20,14 +20,14 @@ config = {
     "data_path": "/nle/nld-aa/nle_data",
 
     # Athena
-    # "db_path": "/ttyrecs/ttyrecs.db",
-    # "dataset_name": "autoascend",
-    # "batch_size": 512,
+    "db_path": "/ttyrecs/ttyrecs.db",
+    "dataset_name": "autoascend",
+    "batch_size": 512,
 
     # Local
-    "db_path": "/home/maciejwolczyk/Repos/ttyrecs.db",
-    "dataset_name": "nld-aa-taster-v1",
-    "batch_size": 16,
+    # "db_path": "/home/maciejwolczyk/Repos/ttyrecs.db",
+    # "dataset_name": "nld-aa-taster-v1",
+    # "batch_size": 16,
 
     "use_prev_action": True,
     "model": "ScaledNet",
@@ -50,12 +50,15 @@ params_grid = [
         "learning_rate": [1e-5, 5e-5],
         "rnn_num_layers": [3],
         "rollout": [32],
+        "use_prev_action": [True, False],
+        "mamba_use_complex": [True, False],
     },
     {
         "seed": list(range(1)),
         "rnn_type": ["lstm"],
         "rnn_size": [512],
         "rollout": [32],
+        "use_prev_action": [True, False],
     },
 ]
 

@@ -50,13 +50,15 @@ params_grid = [
         "learning_rate": [1e-5, 5e-5],
         "rnn_num_layers": [3],
         "rollout": [32],
+        "use_prev_action": [True, False],
+        "mamba_use_complex": [True, False],
     },
-    {
-        "seed": list(range(1)),
-        "rnn_type": ["lstm"],
-        "rnn_size": [512],
-        "rollout": [32],
-    },
+    # {
+    #     "seed": list(range(1)),
+    #     "rnn_type": ["lstm"],
+    #     "rnn_size": [512],
+    #     "rollout": [8, 16, 32, 64, 128],
+    # },
 ]
 
 experiments_list = create_experiments_helper(

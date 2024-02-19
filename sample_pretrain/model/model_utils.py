@@ -8,7 +8,7 @@ from sample_pretrain.cfg.configurable import Configurable
 from sample_pretrain.utils.typing import Config
 
 
-def get_rnn_size(cfg, encoder_out_size):
+def get_rnn_size(cfg):
     if cfg.use_rnn:
         size = cfg.rnn_size * cfg.rnn_num_layers
     else:

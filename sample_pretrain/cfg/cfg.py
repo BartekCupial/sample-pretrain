@@ -546,6 +546,11 @@ def add_model_args(p: ArgumentParser):
         help="Size of the RNN hidden state in recurrent model (e.g. GRU or LSTM)",
     )
     p.add_argument(
+        "--mamba_use_complex",
+        default=False,
+        type=str2bool,
+    )
+    p.add_argument(
         "--mamba_conv_size",
         default=4,
         type=int,

@@ -1,6 +1,7 @@
 import os
 from typing import Tuple
 
+import torch
 import torch.distributed as dist
 
 from sample_pretrain.algo.runners.runner import Runner
@@ -35,6 +36,7 @@ def make_runner(cfg: Config) -> Tuple[Config, Runner]:
 
 def run(cfg: Config):
     setup()
+    torch.autograd.set_detect_anomaly(True)
 
     cfg, runner = make_runner(cfg)
 
