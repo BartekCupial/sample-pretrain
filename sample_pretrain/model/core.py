@@ -21,7 +21,7 @@ class ModelCore(ModelModule, ABC):
 class CustomMamba(nn.Module):
     def __init__(self, input_size: int, output_size: int, d_model: int,
                  d_state: int, d_conv: int, expand: int, num_layers: int = 1,
-                 use_complex: bool = False):
+                 use_complex: bool = False, selective: bool = True):
         super().__init__()
 
         self.input_size = input_size
@@ -38,6 +38,7 @@ class CustomMamba(nn.Module):
            "d_conv": d_conv,
            "expand": expand,
            "use_complex": use_complex,
+           "selective": selective,
         }
 
         self.input_projection = nn.Linear(input_size, d_model)
@@ -53,7 +54,7 @@ class CustomMamba(nn.Module):
                                            max_batch_size=rnn_states.shape[1],
                                            seqlen_offset=2)
         rnn_states = rnn_states.reshape(self.num_layers, rnn_states.shape[1], -1, self.d_conv + self.d_state)
-        rnn_states = rnn_states.contiguous().clone()
+        rnn_states = rnn_states.contiguous()
         conv_state = rnn_states[..., :self.d_conv]
         rnn_state = rnn_states[..., self.d_conv:]
 
@@ -116,7 +117,8 @@ class ModelCoreRNN(ModelCore):
                                     d_conv=cfg.mamba_conv_size,
                                     expand=cfg.mamba_expand,
                                     num_layers=cfg.rnn_num_layers,
-                                    use_complex=cfg.mamba_use_complex)
+                                    use_complex=cfg.mamba_use_complex,
+                                    selective=cfg.mamba_selective_ssm)
         else:
             raise RuntimeError(f"Unknown RNN type {cfg.rnn_type}")
 
@@ -125,9 +127,8 @@ class ModelCoreRNN(ModelCore):
 
     def forward(self, head_output, rnn_states):
         is_seq = not torch.is_tensor(head_output)
-        
-        if self.cfg.debug_zero_history:
-            rnn_states = torch.zeros_like(rnn_states)
+
+        rnn_states = rnn_states * self.cfg.decay_hidden_states
 
         if not is_seq:
             head_output = head_output.unsqueeze(0)

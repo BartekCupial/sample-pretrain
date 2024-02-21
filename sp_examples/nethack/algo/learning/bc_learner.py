@@ -145,6 +145,8 @@ class BCLearner(Learner):
             outputs["observed_log_probs"] = observed_log_probs
 
             rnn_state = outputs["new_rnn_states"] * not_done
+            if self.cfg.detach_hidden_state:
+                rnn_state = rnn_state.detach()
             model_outputs.append(outputs)
 
         # update rnn_states for next iteration

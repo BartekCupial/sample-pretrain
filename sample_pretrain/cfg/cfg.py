@@ -170,10 +170,10 @@ def add_rl_args(p: ArgumentParser):
         help="Whether to randomize and shuffle minibatches between iterations (this is a slow operation when batches are large, disabling this increases learner throughput when training with multiple epochs/minibatches per epoch)",
     )
     p.add_argument(
-        "--debug_zero_history",
-        default=False,
-        type=str2bool,
-        help="Used for debugging purposes to check what happens if RNNs retain zero history",
+        "--decay_hidden_states",
+        default=1.0,
+        type=float,
+        help="Explicitly decay the hidden states (0 = no history, 1 = perfect history)",
     )
 
     # basic RL parameters
@@ -205,6 +205,13 @@ def add_rl_args(p: ArgumentParser):
         default=True,
         type=str2bool,
         help="Whether to use running mean and standard deviation to normalize discounted returns",
+    )
+
+    p.add_argument(
+        "--detach_hidden_state",
+        default=False,
+        type=str2bool,
+        help="Detach",
     )
 
     # components of the loss function
@@ -548,6 +555,11 @@ def add_model_args(p: ArgumentParser):
     p.add_argument(
         "--mamba_use_complex",
         default=False,
+        type=str2bool,
+    )
+    p.add_argument(
+        "--mamba_selective_ssm",
+        default=True,
         type=str2bool,
     )
     p.add_argument(

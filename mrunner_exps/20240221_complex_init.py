@@ -35,6 +35,15 @@ config = {
     "policy_initialization": "torch_default",
     "rnn_type": "mamba",
     "restart_behavior": "overwrite",
+
+    "mamba_model_size": 256,
+    "mamba_state_size": 8,
+    "mamba_conv_size": 4,
+    "mamba_expand": 2,
+    "rnn_size": 512,
+    "rnn_num_layers": 3,
+    "rollout": 32,
+    "use_prev_action": True,
 }
 
 # params different between exps
@@ -42,24 +51,18 @@ params_grid = [
     {
         "seed": list(range(1)),
         "rnn_type": ["mamba"],
-        "mamba_model_size": [256],
-        "mamba_state_size": [8],
-        "mamba_conv_size": [4],
-        "mamba_expand": [2],
-        "rnn_size": [512],
-        "learning_rate": [1e-5, 5e-5],
-        "rnn_num_layers": [3],
-        "rollout": [32],
-        "use_prev_action": [True, False],
-        "mamba_use_complex": [True, False],
+        "learning_rate": [1e-5, 5e-5, 1e-4],
+        "mamba_use_complex": [False],
+        "mamba_selective_ssm": [True, False],
     },
-    # {
-    #     "seed": list(range(1)),
-    #     "rnn_type": ["lstm"],
-    #     "rnn_size": [512],
-    #     "rollout": [32],
-    #     "use_prev_action": [True, False],
-    # },
+    {
+        "seed": list(range(1)),
+        "rnn_type": ["mamba"],
+        "mamba_model_size": [128],
+        "learning_rate": [1e-5, 5e-5, 1e-4],
+        "mamba_use_complex": [True],
+        "mamba_selective_ssm": [True, False],
+    },
 ]
 
 experiments_list = create_experiments_helper(

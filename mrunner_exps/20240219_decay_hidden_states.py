@@ -20,14 +20,14 @@ config = {
     "data_path": "/nle/nld-aa/nle_data",
 
     # Athena
-    "db_path": "/ttyrecs/ttyrecs.db",
-    "dataset_name": "autoascend",
-    "batch_size": 512,
+    # "db_path": "/ttyrecs/ttyrecs.db",
+    # "dataset_name": "autoascend",
+    # "batch_size": 512,
 
     # Local
-    # "db_path": "/home/maciejwolczyk/Repos/ttyrecs.db",
-    # "dataset_name": "nld-aa-taster-v1",
-    # "batch_size": 16,
+    "db_path": "/home/maciejwolczyk/Repos/ttyrecs.db",
+    "dataset_name": "nld-aa-taster-v1",
+    "batch_size": 16,
 
     "use_prev_action": True,
     "model": "ScaledNet",
@@ -51,15 +51,17 @@ params_grid = [
         "rnn_num_layers": [3],
         "rollout": [32],
         "use_prev_action": [True, False],
-        "mamba_use_complex": [True, False],
+        "mamba_use_complex": [False, True],
+        "decay_hidden_states": [1.0, 0.9, 0.5, 0.],
     },
-    # {
-    #     "seed": list(range(1)),
-    #     "rnn_type": ["lstm"],
-    #     "rnn_size": [512],
-    #     "rollout": [32],
-    #     "use_prev_action": [True, False],
-    # },
+    {
+        "seed": list(range(1)),
+        "rnn_type": ["lstm"],
+        "rnn_size": [512],
+        "rollout": [32],
+        "use_prev_action": [True, False],
+        "decay_hidden_states": [1.0, 0.9, 0.5, 0.],
+    },
 ]
 
 experiments_list = create_experiments_helper(

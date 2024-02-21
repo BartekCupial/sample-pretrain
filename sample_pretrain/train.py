@@ -36,7 +36,6 @@ def make_runner(cfg: Config) -> Tuple[Config, Runner]:
 
 def run(cfg: Config):
     setup()
-    torch.autograd.set_detect_anomaly(True)
 
     cfg, runner = make_runner(cfg)
 

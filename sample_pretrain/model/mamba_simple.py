@@ -62,6 +62,7 @@ class Mamba(nn.Module):
         self.use_fast_path = use_fast_path
         self.layer_idx = layer_idx
         self.selective = selective
+        self.use_complex = use_complex
 
         self.in_proj = nn.Linear(self.d_model, self.d_inner * 2, bias=bias, **factory_kwargs)
 
@@ -78,9 +79,14 @@ class Mamba(nn.Module):
         self.activation = "silu"
         self.act = nn.SiLU()
 
-        self.x_proj = nn.Linear(
-            self.d_inner, self.dt_rank + self.d_state * 2, bias=False, **factory_kwargs
-        )
+        if self.use_complex:
+            self.x_proj = nn.Linear(
+                self.d_inner, self.dt_rank + self.d_state * 2 * 2, bias=False, **factory_kwargs
+            )
+        else:
+            self.x_proj = nn.Linear(
+                self.d_inner, self.dt_rank + self.d_state * 2, bias=False, **factory_kwargs
+            )
         self.dt_proj = nn.Linear(self.dt_rank, self.d_inner, bias=True, **factory_kwargs)
 
         # Initialize special dt projection to preserve variance at initialization
@@ -105,26 +111,36 @@ class Mamba(nn.Module):
         self.dt_proj.bias._no_reinit = True
 
         # S4D real initialization
-        A = repeat(
-            torch.arange(1, self.d_state + 1, dtype=torch.float32, device=device),
-            "n -> d n",
-            d=self.d_inner,
-        ).contiguous()
+
+        if self.use_complex:
+            # H diagonal matrices of size N
+            A = 0.5 * torch.ones(self.d_inner, self.d_state,
+                                 dtype=torch.float32, device=device).contiguous()
+            A_imag_row = math.pi * torch.arange(self.d_state, dtype=torch.float32)
+            self.A_imag = nn.Parameter(repeat(A_imag_row, 'n -> d n', d=self.d_inner))
+        else:
+            A = repeat(
+                torch.arange(1, self.d_state + 1, dtype=torch.float32, device=device),
+                "n -> d n",
+                d=self.d_inner,
+            ).contiguous()
+
         A_log = torch.log(A)  # Keep A_log in fp32
         self.A_log = nn.Parameter(A_log)
         self.A_log._no_weight_decay = True
 
-        self.use_complex = use_complex
-        
-        if self.use_complex:
-            self.A_imag = nn.Parameter(repeat(torch.arange(self.d_state, dtype=torch.float32), 'n -> d n', d=self.d_inner)
-)
-
         # TODO: look at S4 codebase
         if not self.selective:
-            self.dt = rearrange(dt, "d (b l) -> b d l", l=seqlen)
-            self.B = rearrange(B, "(b l) dstate -> b dstate l", l=seqlen).contiguous()
-            self.C = rearrange(C, "(b l) dstate -> b dstate l", l=seqlen).contiguous()
+            self.log_dt = nn.Parameter((torch.rand(self.d_inner, **factory_kwargs)
+                           * (math.log(dt_max) - math.log(dt_min))
+                           + math.log(dt_min)
+            ))
+
+            BC_dtype = torch.complex64 if self.use_complex else torch.float32
+            self.B = nn.Parameter(torch.randn(self.d_inner, self.d_state, device=device, dtype=BC_dtype))
+            self.B._no_weight_decay = True
+            self.C = nn.Parameter(torch.randn(self.d_inner, self.d_state, device=device, dtype=BC_dtype))
+            self.C._no_weight_decay = True
 
         # D "skip" parameter
         self.D = nn.Parameter(torch.ones(self.d_inner, device=device))  # Keep in fp32
@@ -144,7 +160,8 @@ class Mamba(nn.Module):
             conv_state, ssm_state = self._get_states_from_cache(inference_params, batch)
             if inference_params.seqlen_offset > 0:
                 # The states are updated inplace
-                out, _, _ = self.step(hidden_states, conv_state, ssm_state)
+                out, conv_state, ssm_state = self.step(hidden_states, conv_state, ssm_state)
+                inference_params.key_value_memory_dict[self.layer_idx] = (conv_state, ssm_state)
                 return out
 
         # We do matmul and transpose BLH -> HBL at the same time
@@ -195,12 +212,15 @@ class Mamba(nn.Module):
             # We're careful here about the layout, to avoid extra transposes.
             # We want dt to have d as the slowest moving dimension
             # and L as the fastest moving dimension, since those are what the ssm_scan kernel expects.
+            assert self.selective is True, "Non-selective mode not implemented in standard forward"
+
             x_dbl = self.x_proj(rearrange(x, "b d l -> (b l) d"))  # (bl d)
             dt, B, C = torch.split(x_dbl, [self.dt_rank, self.d_state, self.d_state], dim=-1)
             dt = self.dt_proj.weight @ dt.t()
             dt = rearrange(dt, "d (b l) -> b d l", l=seqlen)
             B = rearrange(B, "(b l) dstate -> b dstate l", l=seqlen).contiguous()
             C = rearrange(C, "(b l) dstate -> b dstate l", l=seqlen).contiguous()
+
             assert self.activation in ["silu", "swish"]
             y = selective_scan_fn(
                 x,
@@ -244,22 +264,43 @@ class Mamba(nn.Module):
                 self.activation,
             )
 
-        x_db = self.x_proj(x)  # (B dt_rank+2*d_state)
-        dt, B, C = torch.split(x_db, [self.dt_rank, self.d_state, self.d_state], dim=-1)
+        if self.selective:
+            x_db = self.x_proj(x)  # (B dt_rank+2*d_state)
+            if self.use_complex:
+                dt, B, C = torch.split(x_db, [self.dt_rank, self.d_state * 2, self.d_state * 2], dim=-1)
+                B = torch.complex(B[:, :self.d_state], B[:, self.d_state:])
+                C = torch.complex(C[:, :self.d_state], C[:, self.d_state:])
+            else:
+                dt, B, C = torch.split(x_db, [self.dt_rank, self.d_state, self.d_state], dim=-1)
+            dt = F.linear(dt, self.dt_proj.weight)  # (B d_inner)
+
         # Don't add dt_bias here
-        dt = F.linear(dt, self.dt_proj.weight)  # (B d_inner)
         A = -torch.exp(self.A_log.float())  # (d_inner, d_state)
         if self.use_complex:
-            A = torch.complex(A, self.A_imag)
+            A = A + 1j * self.A_imag
 
+        # d -> d_inner, n -> d_state
         # SSM step
         if selective_state_update is None:
             # Discretize A and B
-            dt = F.softplus(dt + self.dt_proj.bias.to(dtype=dt.dtype))
-            dA = torch.exp(torch.einsum("bd,dn->bdn", dt, A))
-            dB = torch.einsum("bd,bn->bdn", dt, B)
-            ssm_state = ssm_state * dA + rearrange(x, "b d -> b d 1") * dB
-            y = torch.einsum("bdn,bn->bd", ssm_state.to(dtype), C)
+            if self.selective:
+                dt = F.softplus(dt + self.dt_proj.bias.to(dtype=dt.dtype))
+                dA = torch.exp(torch.einsum("bd,dn->bdn", dt, A))
+                dB = torch.einsum("bd,bn->bdn", dt, B)
+                ssm_state = ssm_state * dA + rearrange(x, "b d -> b d 1") * dB
+                y = torch.einsum("bdn,bn->bd", ssm_state, C).to(dtype)
+            else:
+                A = repeat(A, "d n -> b d n", b=x.shape[0])
+                B = repeat(self.B, "d n -> b d n", b=x.shape[0])
+                C = repeat(self.C, "d n -> b d n", b=x.shape[0])
+                dt = torch.exp(repeat(self.log_dt, "d -> b d", b=x.shape[0]))
+
+                dA = torch.exp(torch.einsum("bd,bdn->bdn", dt, A))
+                dB = torch.einsum("bd,bdn->bdn", dt, B)
+
+                ssm_state = ssm_state * dA + rearrange(x, "b d -> b d 1") * dB
+                y = torch.einsum("bdn,bdn->bd", ssm_state, C).to(dtype)
+
             y = y + self.D.to(dtype) * x
             y = y * self.act(z)  # (B D)
         else:

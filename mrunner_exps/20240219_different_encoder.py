@@ -51,15 +51,17 @@ params_grid = [
         "rnn_num_layers": [3],
         "rollout": [32],
         "use_prev_action": [True, False],
-        "mamba_use_complex": [True, False],
+        "mamba_use_complex": [False],
+        "use_tty_only": [False],
     },
-    # {
-    #     "seed": list(range(1)),
-    #     "rnn_type": ["lstm"],
-    #     "rnn_size": [512],
-    #     "rollout": [32],
-    #     "use_prev_action": [True, False],
-    # },
+    {
+        "seed": list(range(1)),
+        "rnn_type": ["lstm"],
+        "rnn_size": [512],
+        "rollout": [32],
+        "use_prev_action": [True, False],
+        "use_tty_only": [False],
+    },
 ]
 
 experiments_list = create_experiments_helper(
