@@ -20,14 +20,14 @@ config = {
     "data_path": "/nle/nld-aa/nle_data",
 
     # Athena
-    "db_path": "/ttyrecs/ttyrecs.db",
-    "dataset_name": "autoascend",
-    "batch_size": 512,
+    # "db_path": "/ttyrecs/ttyrecs.db",
+    # "dataset_name": "autoascend",
+    # "batch_size": 128,
 
     # Local
-    # "db_path": "/home/maciejwolczyk/Repos/ttyrecs.db",
-    # "dataset_name": "nld-aa-taster-v1",
-    # "batch_size": 16,
+    "db_path": "/home/maciejwolczyk/Repos/ttyrecs.db",
+    "dataset_name": "nld-aa-taster-v1",
+    "batch_size": 16,
 
     "use_prev_action": True,
     "model": "ScaledNet",
@@ -35,48 +35,33 @@ config = {
     "policy_initialization": "torch_default",
     "rnn_type": "mamba",
     "restart_behavior": "overwrite",
+    "mamba_model_size": 256,
+    "mamba_state_size": 8,
+    "mamba_conv_size": 4,
+    "mamba_expand": 2,
+    "detach_hidden_state": False,
 }
 
 # params different between exps
 params_grid = [
+
+    # These hyperparameters might not be 100% correct, I had to regenerate this file
     {
         "seed": list(range(1)),
         "rnn_type": ["mamba"],
-        "mamba_model_size": [256],
-        "mamba_state_size": [8],
-        "mamba_conv_size": [4],
-        "mamba_expand": [2],
         "rnn_size": [512],
-        "learning_rate": [5e-4, 1e-3],
-        "rnn_num_layers": [3],
-        "rollout": [32],
-        "use_prev_action": [True],
+        "learning_rate": [1e-4, 5e-4, 1e-3],
+        "rollout": [32, 64, 128, 256],
         "mamba_use_complex": [False],
-        "detach_hidden_state": [False],
     },
     {
         "seed": list(range(1)),
-        "rnn_type": ["mamba"],
-        "mamba_model_size": [128],
-        "mamba_state_size": [8],
-        "mamba_conv_size": [4],
-        "mamba_expand": [2],
+        "rnn_type": ["lstm"],
+        "learning_rate": [1e-4],
         "rnn_size": [512],
-        "learning_rate": [5e-4, 1e-3],
-        "rnn_num_layers": [3],
-        "rollout": [32],
-        "use_prev_action": [True],
-        "mamba_use_complex": [True],
+        "rollout": [32, 64, 128, 256],
         "detach_hidden_state": [False],
     },
-    # {
-    #     "seed": list(range(1)),
-    #     "rnn_type": ["lstm"],
-    #     "rnn_size": [512],
-    #     "rollout": [32],
-    #     "use_prev_action": [True],
-    #     "detach_hidden_state": [False, True],
-    # },
 ]
 
 experiments_list = create_experiments_helper(

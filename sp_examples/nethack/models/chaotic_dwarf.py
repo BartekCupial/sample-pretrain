@@ -240,6 +240,7 @@ class ChaoticDwarvenGPT5(Encoder):
 
         self.use_tty_only = cfg.use_tty_only
         self.use_prev_action = cfg.use_prev_action
+        self.encode_only_screen = cfg.encode_only_screen
 
         # screen encoder (TODO: could also use only tty_chars)
         pixel_size = cfg.pixel_size
@@ -269,14 +270,18 @@ class ChaoticDwarvenGPT5(Encoder):
             self.num_actions = None
             self.prev_actions_dim = 0
 
-        self.encoder_out_size = sum(
-            [
-                calc_num_elements(self.screen_encoder, screen_shape),
-                calc_num_elements(self.topline_encoder, topline_shape),
-                calc_num_elements(self.bottomline_encoder, bottomline_shape),
-                self.prev_actions_dim,
-            ]
-        )
+        # TODO: do not initialize the other encoders if they are not needed
+        if self.encode_only_screen:
+            self.encoder_out_size = calc_num_elements(self.screen_encoder, screen_shape) + self.prev_actions_dim
+        else:
+            self.encoder_out_size = sum(
+                [
+                    calc_num_elements(self.screen_encoder, screen_shape),
+                    calc_num_elements(self.topline_encoder, topline_shape),
+                    calc_num_elements(self.bottomline_encoder, bottomline_shape),
+                    self.prev_actions_dim,
+                ]
+            )
 
     def forward(self, obs_dict):
         B, C, H, W = obs_dict["screen_image"].shape
@@ -288,11 +293,17 @@ class ChaoticDwarvenGPT5(Encoder):
             topline = obs_dict["message"]
             bottom_line = obs_dict["blstats"]
 
-        encodings = [
-            self.topline_encoder(topline.float(memory_format=torch.contiguous_format).view(B, -1)),
-            self.bottomline_encoder(bottom_line.float(memory_format=torch.contiguous_format).view(B, -1)),
-            self.screen_encoder(obs_dict["screen_image"].float(memory_format=torch.contiguous_format).view(B, C, H, W)),
-        ]
+        if self.encode_only_screen:
+            encodings = [
+                self.screen_encoder(obs_dict["screen_image"].float(memory_format=torch.contiguous_format).view(B, C, H, W)),
+            ]
+
+        else:
+            encodings = [
+                self.topline_encoder(topline.float(memory_format=torch.contiguous_format).view(B, -1)),
+                self.bottomline_encoder(bottom_line.float(memory_format=torch.contiguous_format).view(B, -1)),
+                self.screen_encoder(obs_dict["screen_image"].float(memory_format=torch.contiguous_format).view(B, C, H, W)),
+            ]
 
         if self.use_prev_action:
             prev_actions = obs_dict["prev_actions"].long().view(B)

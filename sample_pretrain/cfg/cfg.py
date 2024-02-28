@@ -352,6 +352,14 @@ def add_rl_args(p: ArgumentParser):
         type=str2bool,
         help="Whether to use running mean and standard deviation to normalize observations",
     )
+
+    p.add_argument(
+        "--encode_only_screen",
+        default=False,
+        type=str2bool,
+        help="Whether to use only screen for encoding"
+    )
+
     p.add_argument(
         "--normalize_input_keys",
         default=None,

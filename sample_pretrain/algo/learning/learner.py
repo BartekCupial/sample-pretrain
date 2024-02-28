@@ -149,6 +149,8 @@ class Learner(Configurable):
             self.actor_critic = DDP(self.actor_critic, device_ids=[self.device], broadcast_buffers=False)
 
         params = list(self.actor_critic.parameters())
+        num_params = sum(p.numel() for p in params)
+        log.debug(f"Parameter number: {num_params}")
 
         optimizer_cls = dict(adam=torch.optim.Adam, lamb=Lamb)
         if self.cfg.optimizer not in optimizer_cls:
