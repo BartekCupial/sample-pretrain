@@ -134,6 +134,11 @@ def add_rl_args(p: ArgumentParser):
         "Example: if batch_size=128 and num_batches_per_epoch=2, then learner will process 2*128=256 environment transitions in one training iteration.",
     )
     p.add_argument(
+        "--validation_fraction",
+        default=0.,
+        type=float,
+    )
+    p.add_argument(
         "--num_epochs",
         default=1,
         type=int,
@@ -311,7 +316,7 @@ def add_rl_args(p: ArgumentParser):
     p.add_argument(
         "--lr_schedule",
         default="constant",
-        choices=["constant", "kl_adaptive_minibatch", "kl_adaptive_epoch"],
+        choices=["constant", "linear_decay", "interval_drop"],
         type=str,
         help=(
             "Learning rate schedule to use. Constant keeps constant learning rate throughout training."
@@ -321,6 +326,8 @@ def add_rl_args(p: ArgumentParser):
         ),
     )
     p.add_argument("--lr_schedule_kl_threshold", default=0.008, type=float, help="Used with kl_adaptive_* schedulers")
+    p.add_argument("--lr_schedule_drop_step", default=2_000_000_000, type=int, help="When to drop LR")
+    p.add_argument("--lr_schedule_drop_magnitude", default=0.1, type=int, help="How much to drop LR")
     p.add_argument("--lr_adaptive_min", default=1e-6, type=float, help="Minimum learning rate")
     p.add_argument(
         "--lr_adaptive_max",

@@ -2,6 +2,7 @@
 Code borrowed from Katakomba: https://github.com/tinkoff-ai/katakomba/blob/main/katakomba/utils/datasets/large_scale.py
 """
 import shutil
+import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Sequence, Tuple
 
@@ -17,6 +18,7 @@ def load_nld_aa_large_dataset(
     seq_len: int,
     batch_size: int,
     num_workers: int = 8,
+    gameids: Optional[np.ndarray] = None,
     role: Optional[Role] = None,
     race: Optional[Race] = None,
     align: Optional[Alignment] = None,
@@ -31,10 +33,12 @@ def load_nld_aa_large_dataset(
         roles=[str(role.value).title()] if role is not None else None,
         races=[str(race.value).title()] if race is not None else None,
         alignments=[str(align.value).title()] if align is not None else None,
+        game_ids=[str(gameid) for gameid in gameids] if gameids is not None else None,
         **kwargs,
     )
     tp = ThreadPoolExecutor(max_workers=num_workers)
 
+    # TODO: pass gameids to get validation set
     dataset = nld.TtyrecDataset(
         dataset_name=dataset_name,
         dbfilename=db_path,

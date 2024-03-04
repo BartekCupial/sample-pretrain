@@ -37,7 +37,7 @@ class BCLearner(Learner):
     def init(self):
         super().init()
 
-        self.dataset = self._get_dataset()
+        self.train_dataset, self.valid_dataset = self._get_dataset()
         self.tp = ThreadPoolExecutor(max_workers=self.cfg.num_workers)
 
         def _make_sing_iter(dataset):
@@ -91,8 +91,11 @@ class BCLearner(Learner):
 
         self._iterators = []
         self._results = []
-        for _ in range(self.cfg.worker_num_splits):
-            it = _make_sing_iter(self.dataset)
+        for split_idx in range(self.cfg.worker_num_splits):
+            if split_idx == self.cfg.worker_num_splits - 1 and self.valid_dataset is not None:
+                it = _make_sing_iter(self.valid_dataset)
+            else:
+                it = _make_sing_iter(self.train_dataset)
             self._iterators.append(it)
             self._results.append(self.tp.submit(next, it))
 
@@ -114,7 +117,41 @@ class BCLearner(Learner):
             align=align,
         )
 
-        return dataset
+        if self.cfg.validation_fraction > 0:
+            all_gameids = dataset._gameids
+            train_len = int((1. - self.cfg.validation_fraction) * len(all_gameids))
+
+            train_gameids = all_gameids[:train_len]
+            valid_gameids = all_gameids[train_len:]
+
+            train_dataset = load_nld_aa_large_dataset(
+                dataset_name=self.cfg.dataset_name,
+                data_path=self.cfg.data_path,
+                db_path=self.cfg.db_path,
+                seq_len=self.cfg.rollout,
+                batch_size=self.cfg.batch_size,
+                role=role,
+                race=race,
+                align=align,
+                gameids=train_gameids,
+            )
+
+            valid_dataset = load_nld_aa_large_dataset(
+                dataset_name=self.cfg.dataset_name,
+                data_path=self.cfg.data_path,
+                db_path=self.cfg.db_path,
+                seq_len=self.cfg.rollout,
+                batch_size=self.cfg.batch_size,
+                role=role,
+                race=race,
+                align=align,
+                gameids=valid_gameids,
+            )
+        else:
+            train_dataset = dataset
+            valid_dataset = None
+
+        return train_dataset, valid_dataset
 
     def result(self):
         return self._results[self.idx].result()
@@ -127,6 +164,8 @@ class BCLearner(Learner):
 
     def _get_minibatch(self) -> TensorDict:
         normalized_batch = self.result()
+        normalized_batch["validation"] = (self.prev_idx == self.cfg.worker_num_splits - 1
+                                          and self.valid_dataset is not None)
         self.step()
         return normalized_batch
 
@@ -160,10 +199,11 @@ class BCLearner(Learner):
         return loss, model_outputs, {}
 
     def _calculate_metrics(self, mb: TensorDict, model_outputs: TensorDict):
+        dataset = "valid" if mb["validation"] is True else "train"
         targets = mb["actions"].flatten(0, 1).long()
         outputs = model_outputs["action_logits"].flatten(0, 1)
 
         cross_entropy = F.cross_entropy(outputs, targets)
-        metric_summaries = {"cross_entropy": cross_entropy}
+        metric_summaries = {f"{dataset}_cross_entropy": cross_entropy}
 
         return metric_summaries

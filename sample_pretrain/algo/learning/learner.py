@@ -351,27 +351,28 @@ class Learner(Configurable):
             # current minibatch consisting of short trajectory segments with length == recurrence
             mb = self._get_minibatch()
 
-        with timing.add_time("calculate_loss"):
+        with torch.set_grad_enabled(not mb["validation"]), timing.add_time("calculate_loss"):
             loss, model_outputs, loss_summaries = self._calculate_loss(mb)
 
         with torch.no_grad(), timing.add_time("calculate_metrics"):
             metric_summaries = self._calculate_metrics(mb, model_outputs)
 
         # update the weights
-        with timing.add_time("update"):
-            # following advice from https://youtu.be/9mS1fIYj1So set grad to None instead of optimizer.zero_grad()
-            for p in self.actor_critic.parameters():
-                p.grad = None
+        if not mb["validation"]:
+            with timing.add_time("update"):
+                # following advice from https://youtu.be/9mS1fIYj1So set grad to None instead of optimizer.zero_grad()
+                for p in self.actor_critic.parameters():
+                    p.grad = None
 
-            loss.backward()
+                loss.backward()
 
-            if self.cfg.max_grad_norm > 0.0:
-                with timing.add_time("clip"):
-                    torch.nn.utils.clip_grad_norm_(self.actor_critic.parameters(), self.cfg.max_grad_norm)
+                if self.cfg.max_grad_norm > 0.0:
+                    with timing.add_time("clip"):
+                        torch.nn.utils.clip_grad_norm_(self.actor_critic.parameters(), self.cfg.max_grad_norm)
 
-            self._apply_lr(self.curr_lr)
+                self._apply_lr(self.curr_lr)
 
-            self.optimizer.step()
+                self.optimizer.step()
 
         with torch.no_grad(), timing.add_time("after_optimizer"):
             self._after_optimizer_step()

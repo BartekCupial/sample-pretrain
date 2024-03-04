@@ -33,6 +33,8 @@ class TensorDict(dict):
             for key, value in x.items():
                 res[key] = self._index_func(value, indices)
             return res
+        elif isinstance(x, (bool, int, float, str)):
+            return x
         else:
             t = x[indices]
             return t
