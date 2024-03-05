@@ -73,11 +73,33 @@ class LinearDecayScheduler(LearningRateScheduler):
         return lr
 
 
+class IntervalDropScheduler(LearningRateScheduler):
+    def __init__(self, cfg):
+        # num_updates = cfg.train_for_env_steps // cfg.batch_size * cfg.num_epochs
+
+        # cfg.lr_schedule_drop_step is in env steps, so we need to convert it to updates
+        self.drop_step = cfg.lr_schedule_drop_step // (cfg.batch_size * cfg.rollout)
+        print("Drop lr after", self.drop_step)
+        self.drop_magnitude = cfg.lr_schedule_drop_magnitude
+        self.start_lr = cfg.learning_rate
+        self.step = 0
+
+    def invoke_after_each_minibatch(self):
+        return True
+
+    def update(self, current_lr):
+        self.step += 1
+        lr = self.start_lr * (self.drop_magnitude ** (self.step // self.drop_step))
+        return lr
+
+
 def get_lr_scheduler(cfg) -> LearningRateScheduler:
     if cfg.lr_schedule == "constant":
         return LearningRateScheduler()
     elif cfg.lr_schedule == "linear_decay":
         return LinearDecayScheduler(cfg)
+    elif cfg.lr_schedule == "interval_drop":
+        return IntervalDropScheduler(cfg)
     else:
         raise RuntimeError(f"Unknown scheduler {cfg.lr_schedule}")
 
@@ -361,8 +383,9 @@ class Learner(Configurable):
         if not mb["validation"]:
             with timing.add_time("update"):
                 # following advice from https://youtu.be/9mS1fIYj1So set grad to None instead of optimizer.zero_grad()
-                for p in self.actor_critic.parameters():
-                    p.grad = None
+                if self.train_step % self.cfg.optim_step_every_ith == 0:
+                    for p in self.actor_critic.parameters():
+                        p.grad = None
 
                 loss.backward()
 
@@ -372,7 +395,8 @@ class Learner(Configurable):
 
                 self._apply_lr(self.curr_lr)
 
-                self.optimizer.step()
+                if self.train_step % self.cfg.optim_step_every_ith == 0:
+                    self.optimizer.step()
 
         with torch.no_grad(), timing.add_time("after_optimizer"):
             self._after_optimizer_step()

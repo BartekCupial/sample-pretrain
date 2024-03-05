@@ -79,7 +79,7 @@ class BCLearner(Learner):
                     yield normalized_batch
 
             return iter(_iter())
-        
+
         out_size = self.actor_critic.encoder.get_out_size()
         dtype = torch.complex64 if self.cfg.mamba_use_complex else torch.float32
         self.rnn_states = [

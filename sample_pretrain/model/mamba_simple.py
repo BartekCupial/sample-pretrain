@@ -11,16 +11,7 @@ from torch import Tensor
 from einops import rearrange, repeat
 
 from mamba_ssm.ops.selective_scan_interface import selective_scan_ref as selective_scan_fn, mamba_inner_fn
-# from mamba_ssm.ops.selective_scan_interface import selective_scan_fn, mamba_inner_fn
-
-try:
-    from causal_conv1d import causal_conv1d_fn, causal_conv1d_update
-except ImportError:
-    causal_conv1d_fn, causal_conv1d_update = None
-
-# try:
-#     from mamba_ssm.ops.triton.selective_state_update import selective_state_update
-# except ImportError:
+causal_conv1d_fn, causal_conv1d_update = None, None
 selective_state_update = None
 
 try:
@@ -249,7 +240,7 @@ class Mamba(nn.Module):
 
         # Conv step
         if causal_conv1d_update is None:
-            conv_state.copy_(torch.roll(conv_state, shifts=-1, dims=-1))  # Update state (B D W)
+            conv_state = torch.roll(conv_state, shifts=-1, dims=-1)  # Update state (B D W)
             conv_state[:, :, -1] = x
             x = torch.sum(conv_state * rearrange(self.conv1d.weight, "d 1 w -> d w"), dim=-1)  # (B D)
             if self.conv1d.bias is not None:

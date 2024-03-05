@@ -7,7 +7,7 @@ config = {
     "env": "nethack_challenge",
     "exp_tags": [name],
     "exp_point": "monk-AA-BC",
-    "train_for_env_steps": 2_000_000_000,
+    "train_for_env_steps": 20_000_000_000,
     "group": "monk-AA-BC",
     "character": "mon-hum-neu",
     "num_workers": 16,
@@ -20,14 +20,14 @@ config = {
     "data_path": "/nle/nld-aa/nle_data",
 
     # Athena
-    # "db_path": "/ttyrecs/ttyrecs.db",
-    # "dataset_name": "autoascend",
-    # "batch_size": 128,
+    "db_path": "/ttyrecs/ttyrecs.db",
+    "dataset_name": "autoascend",
+    "batch_size": 512,
 
     # Local
-    "db_path": "/home/maciejwolczyk/Repos/ttyrecs.db",
-    "dataset_name": "nld-aa-taster-v1",
-    "batch_size": 16,
+    # "db_path": "/home/maciejwolczyk/Repos/ttyrecs.db",
+    # "dataset_name": "nld-aa-taster-v1",
+    # "batch_size": 16,
 
     "use_prev_action": True,
     "model": "ScaledNet",
@@ -43,26 +43,19 @@ config = {
 }
 
 # params different between exps
-
-
 params_grid = [
-
-    # These hyperparameters might not be 100% correct, I had to regenerate this file
     {
         "seed": list(range(1)),
         "rnn_type": ["mamba"],
         "rnn_size": [512],
         "learning_rate": [1e-4, 5e-4, 1e-3],
-        "rollout": [32, 64, 128, 256],
+        "max_grad_norm": [4.],
+        "mamba_model_size": [256],
+        "rnn_num_layers": [3],
+        "rollout": [32],
         "mamba_use_complex": [False],
-    },
-    {
-        "seed": list(range(1)),
-        "rnn_type": ["lstm"],
-        "learning_rate": [1e-4],
-        "rnn_size": [512],
-        "rollout": [32, 64, 128, 256],
-        "detach_hidden_state": [False],
+        "lr_schedule": ["interval_drop"],
+        "lr_schedule_drop_step": [1_000_000_000, 2_000_000_000],
     },
 ]
 

@@ -327,7 +327,7 @@ def add_rl_args(p: ArgumentParser):
     )
     p.add_argument("--lr_schedule_kl_threshold", default=0.008, type=float, help="Used with kl_adaptive_* schedulers")
     p.add_argument("--lr_schedule_drop_step", default=2_000_000_000, type=int, help="When to drop LR")
-    p.add_argument("--lr_schedule_drop_magnitude", default=0.1, type=int, help="How much to drop LR")
+    p.add_argument("--lr_schedule_drop_magnitude", default=0.1, type=float, help="How much to drop LR")
     p.add_argument("--lr_adaptive_min", default=1e-6, type=float, help="Minimum learning rate")
     p.add_argument(
         "--lr_adaptive_max",
@@ -608,6 +608,7 @@ def add_model_args(p: ArgumentParser):
         type=str,
         help="Type of RNN cell to use if use_rnn is True",
     )
+    p.add_argument("--optim_step_every_ith", type=int, default=1)
     p.add_argument("--rnn_num_layers", default=1, type=int, help="Number of RNN layers to use if use_rnn is True")
 
     # Decoder settings. Decoder appears between policy core (RNN) and action/critic heads.
@@ -879,3 +880,4 @@ def add_pbt_args(p: ArgumentParser):
         type=float,
         help="When PBT mutates a float hyperparam, it samples the change magnitude randomly from the uniform distribution [pbt_perturb_min, pbt_perturb_max]",
     )
+
